@@ -1,4 +1,4 @@
-"""The app factory: settings, database, error handlers and the five controllers."""
+"""The app factory: settings, database, error handlers and the seven controllers."""
 
 from __future__ import annotations
 

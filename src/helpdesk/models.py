@@ -92,3 +92,36 @@ class Comment:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+@dataclass
+class TicketEvent:
+    id: int
+    ticket_id: int
+    actor_id: int
+    action: str
+    detail: str
+    created_at: str
+
+    @classmethod
+    def from_row(cls, row: Mapping[str, Any]) -> "TicketEvent":
+        names = ("id", "ticket_id", "actor_id", "action", "detail", "created_at")
+        return cls(**{key: row[key] for key in names})
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass
+class Rating:
+    ticket_id: int
+    score: int
+    feedback: str
+    created_at: str
+
+    @classmethod
+    def from_row(cls, row: Mapping[str, Any]) -> "Rating":
+        return cls(**{key: row[key] for key in ("ticket_id", "score", "feedback", "created_at")})
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)

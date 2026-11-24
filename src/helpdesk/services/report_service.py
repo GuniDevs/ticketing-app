@@ -5,6 +5,8 @@ from typing import Any
 from .. import clock
 from ..db import get_db
 from ..models import ACTIVE_STATUSES, PRIORITIES, STATUSES
+from ..repositories import ratings as ratings_repo
+from ..repositories import tags as tags_repo
 from ..repositories import tickets as tickets_repo
 from ..repositories import users as users_repo
 
@@ -34,10 +36,17 @@ def summary() -> dict[str, Any]:
                 resolved_on_time += 1
 
     workload = tickets_repo.active_counts_by_assignee(db)
+    rating_by_agent = ratings_repo.average_by_assignee(db)
     agents = [
-        {"id": agent.id, "name": agent.name, "active_tickets": workload.get(agent.id, 0)}
+        {
+            "id": agent.id,
+            "name": agent.name,
+            "active_tickets": workload.get(agent.id, 0),
+            "average_rating": rating_by_agent.get(agent.id),
+        }
         for agent in users_repo.list_all(db, "agent")
     ]
+    average_rating, rating_count = ratings_repo.average_and_count(db)
     unassigned = sum(1 for t in tickets if t.assignee_id is None and t.status in ACTIVE_STATUSES)
 
     return {
@@ -48,5 +57,8 @@ def summary() -> dict[str, Any]:
         "unassigned_active": unassigned,
         "average_resolution_hours": round(sum(resolved_hours) / len(resolved_hours), 2) if resolved_hours else None,
         "sla_met_percent": round(100 * resolved_on_time / len(resolved_hours), 1) if resolved_hours else None,
+        "average_rating": average_rating,
+        "rating_count": rating_count,
+        "top_tags": [{"tag": tag, "tickets": n} for tag, n in tags_repo.usage(db)[:5]],
         "agents": agents,
     }
