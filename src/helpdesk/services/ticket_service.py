@@ -9,6 +9,7 @@ from ..errors import ApiError
 from ..models import PRIORITIES, SLA_HOURS, STATUSES, TRANSITIONS, Ticket, User
 from ..repositories import tickets as tickets_repo
 from ..repositories import users as users_repo
+from . import history_service
 
 TITLE_MIN, TITLE_MAX, DESCRIPTION_MAX = 3, 120, 5000
 
@@ -49,7 +50,7 @@ def create_ticket(user: User, title: object, description: object, priority: obje
         raise ApiError(400, "invalid_priority", f"the priority must be one of: {', '.join(PRIORITIES)}")
     created = clock.now()
     due = created + timedelta(hours=SLA_HOURS[chosen])
-    return tickets_repo.create(
+    created_ticket = tickets_repo.create(
         get_db(),
         title=title,
         description=description.strip(),
@@ -59,6 +60,8 @@ def create_ticket(user: User, title: object, description: object, priority: obje
         created_at=clock.iso(created),
         due_at=clock.iso(due),
     )
+    history_service.record(user, created_ticket.id, "created", chosen)
+    return created_ticket
 
 
 def list_tickets(user: User, *, status: str | None, priority: str | None, assignee_id: int | None,
@@ -108,7 +111,9 @@ def change_status(user: User, ticket_id: int, new_status: object) -> Ticket:
     elif new_status == "open":  # a reopened ticket starts again
         fields["resolved_at"] = None
         fields["closed_at"] = None
-    return tickets_repo.update(get_db(), ticket.id, fields)
+    updated = tickets_repo.update(get_db(), ticket.id, fields)
+    history_service.record(user, ticket.id, "status_changed", f"{ticket.status} -> {new_status}")
+    return updated
 
 
 def assign(user: User, ticket_id: int, agent_id: object) -> Ticket:
@@ -120,4 +125,8 @@ def assign(user: User, ticket_id: int, agent_id: object) -> Ticket:
     agent = users_repo.get(get_db(), agent_id)
     if agent is None or agent.role != "agent":
         raise ApiError(400, "invalid_agent", "agent_id must be the id of an agent")
-    return tickets_repo.update(get_db(), ticket.id, {"assignee_id": agent.id, "updated_at": clock.iso(clock.now())})
+    updated = tickets_repo.update(
+        get_db(), ticket.id, {"assignee_id": agent.id, "updated_at": clock.iso(clock.now())}
+    )
+    history_service.record(user, ticket.id, "assigned", str(agent.id))
+    return updated

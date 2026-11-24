@@ -11,7 +11,10 @@ and read reports.
 - **Workflow:** `open` → `in_progress` → `resolved` → `closed`, plus reopening. A customer may only close or reopen a resolved ticket
   of their own. A closed ticket stays closed.
 - **Comments:** staff can write internal notes that a customer never sees. A closed ticket takes no new comments.
-- **Reports (staff):** counts by status and priority, SLA breaches, average time to resolve, SLA met percent, and each agent's workload.
+- **Tags:** up to 8 per ticket (lower case, letters, digits and dashes). Staff see tag usage and can list the tickets with a tag.
+- **History:** every create, status change, assignment, tag and rating is logged. Staff can read it.
+- **Ratings:** the customer who opened a ticket rates it 1 to 5 once it is resolved, one time only.
+- **Reports (staff):** counts by status and priority, SLA breaches, average time to resolve, SLA met percent, average customer rating, top tags, and each agent's workload.
 - **Safety:** passwords are hashed with scrypt, tokens are signed (HMAC-SHA256) and expire, every SQL value goes through a placeholder,
   and a customer who asks for someone else's ticket gets the same 404 as for a missing one.
 
@@ -19,7 +22,7 @@ and read reports.
 
 | Folder | Job |
 | --- | --- |
-| `src/helpdesk/controllers/` | Five controllers: auth, users, tickets, comments, reports. They read the request and shape the JSON answer |
+| `src/helpdesk/controllers/` | Seven controllers: auth, users, tickets, comments, tags, feedback (history and ratings), reports. They read the request and shape the JSON answer |
 | `src/helpdesk/services/` | The business rules |
 | `src/helpdesk/repositories/` | The only code that talks SQL |
 | `src/helpdesk/auth.py` | Passwords, tokens and the `login_required` and `roles_required` decorators |
@@ -54,6 +57,11 @@ a new key is made at each start, so tokens stop working after a restart).
 | `PATCH /api/tickets/<id>/status` | signed in | `{status}` |
 | `POST /api/tickets/<id>/assign` | staff | `{agent_id}` |
 | `GET`, `POST /api/tickets/<id>/comments` | signed in | `{body, internal}` |
+| `GET`, `POST /api/tickets/<id>/tags` | signed in | `{tag}` |
+| `DELETE /api/tickets/<id>/tags/<tag>` | staff | remove a tag |
+| `GET /api/tags`, `GET /api/tags/<tag>/tickets` | staff | usage and tickets |
+| `GET /api/tickets/<id>/history` | staff | the ticket's log |
+| `GET`, `POST /api/tickets/<id>/rating` | signed in | `{score, feedback}` (owner only to post) |
 | `GET /api/reports/summary` | staff | the numbers above |
 | `GET /healthz` | anyone | `{"status": "ok"}` |
 

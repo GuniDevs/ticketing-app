@@ -40,6 +40,30 @@ CREATE TABLE IF NOT EXISTS comments (
     created_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS ticket_tags (
+    ticket_id INTEGER NOT NULL REFERENCES tickets (id) ON DELETE CASCADE,
+    tag       TEXT NOT NULL,
+    PRIMARY KEY (ticket_id, tag)
+);
+
+CREATE TABLE IF NOT EXISTS ticket_events (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    ticket_id  INTEGER NOT NULL REFERENCES tickets (id) ON DELETE CASCADE,
+    actor_id   INTEGER NOT NULL REFERENCES users (id),
+    action     TEXT NOT NULL,
+    detail     TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ratings (
+    ticket_id  INTEGER PRIMARY KEY REFERENCES tickets (id) ON DELETE CASCADE,
+    score      INTEGER NOT NULL CHECK (score BETWEEN 1 AND 5),
+    feedback   TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_tags_tag ON ticket_tags (tag);
+CREATE INDEX IF NOT EXISTS idx_events_ticket ON ticket_events (ticket_id);
 CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets (status);
 CREATE INDEX IF NOT EXISTS idx_tickets_requester ON tickets (requester_id);
 CREATE INDEX IF NOT EXISTS idx_comments_ticket ON comments (ticket_id);

@@ -13,7 +13,7 @@ def test_empty_summary(client, agent):
     assert data["total"] == 0
     assert data["average_resolution_hours"] is None
     assert data["sla_met_percent"] is None
-    assert data["agents"] == [{"id": agent[0].id, "name": "Ann", "active_tickets": 0}]
+    assert data["agents"] == [{"id": agent[0].id, "name": "Ann", "active_tickets": 0, "average_rating": None}]
 
 
 def test_summary_counts_sla_and_workload(client, customer, agent, clock):
